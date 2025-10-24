@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Controle de Dívidas - Mobile App</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    margin: 0;
+    padding: 10px;
+    background: #f0f4f8;
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .add-client {
+    display: flex;
+    gap: 10px;
+  }
+  .add-client input {
+    flex: 1;
+    padding: 12px;
+    font-size: 1em;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  .add-client button {
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+  .add-client button:active {
+    background-color: #45a049;
+  }
+  .cliente-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cliente-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cliente-header span {
+    font-size: 1.2em;
+    font-weight: bold;
+  }
+  .cliente-header button {
+    margin-left: 5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    font-size: 0.9em;
+  }
+  .toggle-btn { background: #2196F3; color: white; }
+  .add-product-btn { background: #ff9800; color: white; }
+  .erase-btn { background: #f44336; color: white; }
+  .valor-total {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #e91e63;
+    margin-top: 5px;
+    transition: all 0.5s ease;
+  }
+  .valor-total.animate {
+    color: #4caf50;
+    transform: scale(1.2);
+  }
+  .cliente-details {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cart-panel {
+    background: #fff3e0;
+    border-radius: 10px;
+    padding: 12px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1em;
+    gap: 5px;
+  }
+  .quantity {
+    font-weight: bold;
+    width: 30px;
+    text-align: center;
+  }
+  .product-item button {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+  }
+  .add-btn { background: #4CAF50; color: white; }
+  .remove-btn { background: #f44336; color: white; }
+  .cart-total {
+    font-weight: bold;
+    color: #1e88e5;
+  }
+  .finalize-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    margin-top: 5px;
+  }
+  .history {
+    background: #e8f0fe;
+    padding: 10px;
+    border-radius: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .history-item {
+    font-size: 0.9em;
+    padding: 5px;
+    border-left: 4px solid transparent;
+    border-radius: 5px;
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+  }
+  .history-item.compra { border-left-color: #4CAF50; background: #e8f5e9; }
+  .history-item.pagamento { border-left-color: #f44336; background: #ffebee; }
+  @keyframes fadeIn {
+    from {opacity:0; transform:translateX(-10px);}
+    to {opacity:1; transform:translateX(0);}
+  }
+  .payment-section {
+    display:flex;
+    gap:5px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top:5px;
+  }
+  .payment-section input {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 90px;
+  }
+  .payment-section button {
+    background: #f44336;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<h1>Controle de Dívidas - Mobile</h1>
+<div class="container">
+  <div class="add-client">
+    <input type="text" id="newClientName" placeholder="Nome do cliente" />
+    <button onclick="addClient()">Adicionar</button>
+  </div>
+  <div id="clientesList"></div>
+</div>
+<script>
+let clientes = [];
+let produtos = [
+  { nome: "Coca Cola", preco: 12.00 },
+  { nome: "Sukita", preco: 8.50 },
+  { nome: "Arroz", preco: 5.20 },
+  { nome: "Mioko", preco: 3.50 },
+  { nome: "Halls", preco: 2.00 },
+  { nome: "Mentos", preco: 2.00 },
+  { nome: "Fini", preco: 2.00 },
+  { nome: "Massa de Tomate", preco: 3.50 },
+  { nome: "Macarrão 450 g", preco: 4.50 },
+  { nome: "Sardinha", preco: 6.50 },
+  { nome: "Ervilha", preco: 4.50 },
+  { nome: "Milho", preco: 4.50 },
+  { nome: "Açúcar", preco: 5.00 },
+  { nome: "Sazon", preco: 5.00 },
+  { nome: "Óleo", preco: 9.00 },
+  { nome: "Leite", preco: 6.50 },
+  { nome: "Piraquê (biscoito)", preco: 7.00 },
+  { nome: "Maizena", preco: 4.00 },
+  { nome: "Fermento", preco: 4.90 },
+  { nome: "Creme de Leite", preco: 4.50 },
+  { nome: "Ketchup", preco: 7.50 },
+  { nome: "Pasta de Dente", preco: 6.00 },
+  { nome: "Papel Higiênico", preco: 5.50 },
+  { nome: "Sabonete", preco: 4.00 },
+  { nome: "Pó de Café", preco: 30.00 },
+  { nome: "Milho de Pipoca", preco: 5.00 },
+  { nome: "Carvão", preco: 0 },
+  { nome: "Sabão em Pó", preco: 11.00 },
+  { nome: "Super Cola", preco: 4.00 },
+  { nome: "Detergente", preco: 3.00 },
+  { nome: "Vassoura", preco: 12.00 },
+  { nome: "Rodo", preco: 12.00 },
+  { nome: "Cartela de Ovos (20 unds)", preco: 18.00 },
+  { nome: "Barbeador", preco: 3.50 },
+  { nome: "Chiclete", preco: 0.25 },
+  { nome: "Doce de Amendoim", preco: 1.00 },
+  { nome: "Pingo de Leite", preco: 0.40 },
+  { nome: "Doce de Geleia", preco: 1.00 },
+  { nome: "Pé de Moleque", preco: 1.50 },
+  { nome: "Doce de Abóbora", preco: 1.50 },
+  { nome: "Jujuba de Eucalipto", preco: 0.50 },
+  { nome: "Bala", preco: 0.10 },
+  { nome: "Tang", preco: 2.00 },
+  { nome: "Flash", preco: 1.50 },
+  { nome: "Amendoim", preco: 1.00 },
+  { nome: "Bala de Caramelo", preco: 0.25 },
+  { nome: "Pirulito", preco: 0.50 },
+  { nome: "Bananada", preco: 0.80 },
+  { nome: "Paçoca", preco: 0.50 },
+  { nome: "Jujuba", preco: 1.00 },
+  { nome: "Leite Condensado", preco: 7.00 },
+  { nome: "Isqueiro", preco: 4.00 },
+  { nome: "Isqueiro", preco: 3.50 },
+  { nome: "Lâmpada", preco: 5.00 }
+];
+
+function renderClientes() {
+  const list = document.getElementById('clientesList');
+  list.innerHTML = '';
+  clientes.forEach((c, index) => {
+    const div = document.createElement('div');
+    div.className = 'cliente-card';
+    div.innerHTML = `
+      <div class="cliente-header">
+        <span>${c.name}</span>
+        <div>
+          <button class="toggle-btn" onclick="toggleDetails(${index})">${c.show ? '▲' : '▼'}</button>
+          <button class="add-product-btn" onclick="toggleCart(${index})">Adicionar Produto</button>
+          <button class="erase-btn" onclick="eraseDebt(${index})">Apagar Dívida</button>
+        </div>
+      </div>
+      <div class="cliente-details" id="details-${index}" style="display:${c.show ? 'flex' : 'none'}">
+        <p class="valor-total" id="saldo-${index}">Valor Total: R$ ${c.saldo.toFixed(2)}</p>
+        <div class="payment-section">
+          <label>Valor a pagar:</label>
+          <input type="number" id="partial-${index}" value="0" min="0" />
+          <button onclick="payPartial(${index})">Pagar</button>
+        </div>
+        <div class="cart-panel" id="cart-${index}">
+          <h4>Carrinho</h4>
+          ${produtos
+            .map(
+              (p, pi) => `
+            <div class="product-item">
+              <span>${p.nome} - R$ ${p.preco.toFixed(2)}</span>
+              <div>
+                <button class="remove-btn" onclick="removeProduct(${index},${pi})">−</button>
+                <span class="quantity" id="qty-${index}-${pi}">${c.cart[pi]}</span>
+                <button class="add-btn" onclick="addProduct(${index},${pi})">+</button>
+              </div>
+            </div>
+          `
+            )
+            .join('')}
+          <p class="cart-total">Total do carrinho: R$ <span id="total-${index}">0.00</span></p>
+          <button class="finalize-btn" onclick="finalizeProducts(${index})">Adicionar ao Valor Total</button>
+        </div>
+        <div class="history">
+          <h4>Histórico:</h4>
+          <div id="history-${index}">
+            ${c.history
+              .map((h) => {
+                const cls = h.type === 'compra' ? 'compra' : 'pagamento';
+                return `<div class="history-item ${cls}">${h.text}</div>`;
+              })
+              .join('')}
+          </div>
+        </div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+  updateAllTotals();
+}
+
+function addClient() {
+  const input = document.getElementById('newClientName');
+  const name = input.value.trim();
+  if (!name) {
+    alert('Digite um nome válido para o cliente.');
+    return;
+  }
+  clientes.push({ name, saldo: 0, cart: Array(produtos.length).fill(0), show: false, history: [] });
+  input.value = '';
+  renderClientes();
+}
+
+function toggleDetails(index) {
+  clientes[index].show = !clientes[index].show;
+  renderClientes();
+}
+
+function toggleCart(index) {
+  const cartDiv = document.getElementById(`cart-${index}`);
+  if (!cartDiv) return;
+  if (cartDiv.style.display === 'flex') {
+    cartDiv.style.display = 'none';
+  } else {
+    cartDiv.style.display = 'flex';
+  }
+}
+
+function addProduct(clienteIndex, productIndex) {
+  clientes[clienteIndex].cart[productIndex]++;
+  document.getElementById(`qty-${clienteIndex}-${productIndex}`).textContent = clientes[clienteIndex].cart[productIndex];
+  updateCartTotal(clienteIndex);
+}
+
+function removeProduct(clienteIndex, productIndex) {
+  if (clientes[clienteIndex].cart[productIndex] > 0) {
+    clientes[clienteIndex].cart[productIndex]--;
+    document.getElementById(`qty-${clienteIndex}-${productIndex}`).textContent = clientes[clienteIndex].cart[productIndex];
+    updateCartTotal(clienteIndex);
+  }
+}
+
+function updateCartTotal(index) {
+  const total = clientes[index].cart.reduce(
+    (sum, qty, i) => sum + qty * produtos[i].preco,
+    0
+  );
+  document.getElementById(`total-${index}`).textContent = total.toFixed(2);
+}
+
+function finalizeProducts(index) {
+  const total = clientes[index].cart.reduce(
+    (sum, qty, i) => sum + qty * produtos[i].preco,
+    0
+  );
+  if (total === 0) return alert('Carrinho vazio, adicione produtos antes de finalizar.');
+  clientes[index].saldo += total;
+  clientes[index].history.push({ type: 'compra', text: `Compra de R$ ${total.toFixed(2)}` });
+  clientes[index].cart = Array(produtos.length).fill(0);
+  clientes[index].show = true;
+  renderClientes();
+  alert(`Compra adicionada ao saldo do cliente ${clientes[index].name} no valor de R$ ${total.toFixed(2)}.`);
+}
+
+function eraseDebt(index) {
+  if (confirm(`Apagar toda a dívida e remover o cliente ${clientes[index].name} da lista?`)) {
+    clientes.splice(index, 1);  // Remove o cliente do array
+    renderClientes();
+  }
+}
+
+function payPartial(index) {
+  const input = document.getElementById(`partial-${index}`);
+  let val = parseFloat(input.value);
+  if (isNaN(val) || val <= 0) {
+    alert('Digite um valor válido para pagar.');
+    return;
+  }
+  if (val > clientes[index].saldo) {
+    alert('Valor maior que o saldo atual.');
+    return;
+  }
+  clientes[index].saldo -= val;
+  clientes[index].history.push({ type: 'pagamento', text: `Pagamento parcial de R$ ${val.toFixed(2)}` });
+  input.value = '0';
+  renderClientes();
+}
+
+function updateAllTotals() {
+  clientes.forEach((c, i) => {
+    const saldoElem = document.getElementById(`saldo-${i}`);
+    if (!saldoElem) return;
+    saldoElem.textContent = `Valor Total: R$ ${c.saldo.toFixed(2)}`;
+    saldoElem.classList.add('animate');
+    setTimeout(() => saldoElem.classList.remove('animate'), 1000);
+    updateCartTotal(i);
+  });
+}
+
+renderClientes();
+</script>
+</body>
+</html>
